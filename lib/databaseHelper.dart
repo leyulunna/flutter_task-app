@@ -18,17 +18,27 @@ class DatabaseHelper {
     String path = join(await getDatabasesPath(), 'tasks.db');
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,  // 更新版本号
       onCreate: (db, version) {
         db.execute('''
           CREATE TABLE tasks (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             title TEXT,
+            description TEXT,  // 确保有 description 字段
             isCompleted INTEGER
           )
         ''');
       },
+      onUpgrade: onUpgrade,  // 处理数据库升级
     );
+  }
+
+  Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute('''
+        ALTER TABLE tasks ADD COLUMN description TEXT;  // 添加 description 字段
+      ''');
+    }
   }
 
   Future<List<Task>> getTasks() async {
@@ -56,24 +66,25 @@ class DatabaseHelper {
 class Task {
   int? id;
   String title;
+  String description; // 添加描述字段
   bool isCompleted;
 
-  Task({this.id, required this.title, this.isCompleted = false});
+  Task({this.id, required this.title, required this.description, this.isCompleted = false});
 
-  // Convert Task to Map (for saving in SQLite)
   Map<String, dynamic> toMap() {
     return {
       'id': id,
       'title': title,
+      'description': description, // 保存描述字段
       'isCompleted': isCompleted ? 1 : 0,
     };
   }
 
-  // Convert Map to Task (for reading from SQLite)
   factory Task.fromMap(Map<String, dynamic> map) {
     return Task(
       id: map['id'],
       title: map['title'],
+      description: map['description'], // 读取描述字段
       isCompleted: map['isCompleted'] == 1,
     );
   }
