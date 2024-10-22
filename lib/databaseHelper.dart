@@ -15,42 +15,69 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'tasks.db');
-    return await openDatabase(
-      path,
-      version: 2,  // 更新版本号
-      onCreate: (db, version) {
-        db.execute('''
-          CREATE TABLE tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            title TEXT,
-            description TEXT,  // 确保有 description 字段
-            isCompleted INTEGER
-          )
-        ''');
-      },
-      onUpgrade: onUpgrade,  // 处理数据库升级
-    );
+    try {
+      String path = join(await getDatabasesPath(), 'tasks.db');
+      print("Database path: $path"); // Log the path to ensure it's correct
+      return await openDatabase(
+        path,
+        version: 3,
+        onCreate: (db, version) {
+          print("Creating tasks table");
+          return db.execute('''
+            CREATE TABLE tasks (
+              id INTEGER PRIMARY KEY AUTOINCREMENT,
+              title TEXT,
+              description TEXT,
+              isCompleted INTEGER
+            )
+          ''');
+        },
+        onUpgrade: onUpgrade,
+      );
+    } catch (e) {
+      print("Error initializing database: $e"); // Log any errors
+      throw Exception("Database initialization failed");
+    }
   }
 
+
   Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
+    if (oldVersion < newVersion) {
       await db.execute('''
+        CREATE TABLE IF NOT EXISTS tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        title TEXT,
+        description TEXT,
+        isCompleted INTEGER
+      )
+
         ALTER TABLE tasks ADD COLUMN description TEXT;  // 添加 description 字段
       ''');
     }
   }
 
   Future<List<Task>> getTasks() async {
-    final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('tasks');
-    return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
+    try {
+      final db = await database;
+      final List<Map<String, dynamic>> maps = await db.query('tasks');
+      return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
+    } catch (e) {
+      print("Error fetching tasks: $e"); // Log the error
+      return []; // Return an empty list in case of an error
+    }
   }
 
+
   Future<void> insertTask(Task task) async {
-    final db = await database;
-    await db.insert('tasks', task.toMap());
+    try {
+      final db = await database;
+      await db.insert('tasks', task.toMap());
+      print("Inserted task: ${task.title}"); // Log the task being inserted
+    } catch (e) {
+      print("Error inserting task: $e"); // Log any errors
+    }
   }
+
 
   Future<void> updateTask(Task task) async {
     final db = await database;
