@@ -177,7 +177,7 @@ class TaskTile extends StatelessWidget {
     required this.isChecked,
     required this.checkboxCallback,
     required this.deleteCallback,
-  });//required
+  });
 
   @override
   Widget build(BuildContext context) {
