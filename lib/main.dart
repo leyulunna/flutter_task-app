@@ -73,6 +73,63 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
+  void _showEditTaskDialog (Task task) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog( 
+          title: Text('Edit Task'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: _titleController..text = task.title, // [新代码] 绑定 title 输入框到 _titleController
+                decoration: InputDecoration(labelText: 'Title'), // 输入框提示
+              ),
+              TextField(
+                controller: _descriptionController..text = task.description, // [新代码] 绑定 description 输入框到 _descriptionController
+                decoration: InputDecoration(labelText: 'Description'), // 输入框提示
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _editTask(task); // [新代码] 保存任务并更新界面
+              },
+              child: Text('Update'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+    void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Invalid Input'),
+          content: Text(message), 
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); 
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   // 添加任务到数据库
   void _addTask() async {
     if (_titleController.text.isNotEmpty && _descriptionController.text.isNotEmpty) { // [新代码] 确保 title 不为空
@@ -92,9 +149,28 @@ class _TodoScreenState extends State<TodoScreen> {
       });
       // 关闭弹窗
       Navigator.of(context).pop(); // 关闭对话框
+      }else {
+      // 可以显示一个提示，要求用户填写完整信息
+      _showErrorDialog("Title or description cannot be empty");
+  }
+  }
+  void _editTask(Task task) async {
+    if (_titleController.text.isNotEmpty && _descriptionController.text.isNotEmpty) { // [新代码] 确保 title 不为空
+      task.title = _titleController.text; // 更新任务标题
+      task.description = _descriptionController.text; // 更新任务描述
+      await DatabaseHelper().updateTask(task); // 更新数据库中的任务
+
+    _titleController.clear(); // [新代码] 清空 title 输入框
+      _descriptionController.clear(); // [新代码] 清空 description 输入框
+      // 重新加载任务
+      setState(() {
+        taskList = DatabaseHelper().getTasks(); // [新代码] 更新任务列表
+      });
+      // 关闭弹窗
+      Navigator.of(context).pop(); // 关闭对话框
     }else {
     // 可以显示一个提示，要求用户填写完整信息
-    print("Title or description cannot be empty");
+    _showErrorDialog("Title or description cannot be empty");
   }
   }
 
@@ -134,6 +210,13 @@ class _TodoScreenState extends State<TodoScreen> {
                       DatabaseHelper().deleteTask(task.id!); // [已修改] 从数据库删除任务
                       taskList = DatabaseHelper().getTasks(); // [已修改] 重新加载任务列表
                     });
+                    },
+                  editCallback: () {
+                    setState(() {
+                      _titleController.text = task.title; // [新代码] 填充编辑框
+                      _descriptionController.text = task.description; // [新代码] 填充编辑框
+                      _showEditTaskDialog(task); // [新代码] 显示编辑对话框
+                    });
                   },
                 );
               },
@@ -156,12 +239,14 @@ class TaskTile extends StatelessWidget {
   final bool isChecked;
   final Function(bool?) checkboxCallback;
   final VoidCallback deleteCallback;
+  final VoidCallback editCallback;
 
   TaskTile({
     required this.taskTitle,
     required this.isChecked,
     required this.checkboxCallback,
     required this.deleteCallback,
+    required this.editCallback,
   });
 
   @override
@@ -177,10 +262,19 @@ class TaskTile extends StatelessWidget {
         value: isChecked, // 任务完成状态
         onChanged: checkboxCallback, // 状态改变时回调
       ),
-      trailing: IconButton(
-        icon: Icon(Icons.delete),
-        onPressed: deleteCallback, // 点击删除按钮删除任务
-      ),
+      trailing: Row(
+         mainAxisSize: MainAxisSize.min,
+        children: [
+          IconButton(
+            icon: Icon(Icons.edit),
+            onPressed: editCallback, // 点击编辑按钮编辑任务
+            ),
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: deleteCallback, // 点击删除按钮删除任务
+            ),
+          ],
+        ),
     );
   }
 }
