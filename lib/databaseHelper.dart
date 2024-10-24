@@ -17,7 +17,7 @@ class DatabaseHelper {
   Future<Database> _initDatabase() async {
     try {
       String path = join(await getDatabasesPath(), 'tasks.db');
-      print("Database path: $path"); // Log the path to ensure it's correct
+      print("Database path: $path");
       return await openDatabase(
         path,
         version: 3,
@@ -35,7 +35,7 @@ class DatabaseHelper {
         onUpgrade: onUpgrade,
       );
     } catch (e) {
-      print("Error initializing database: $e"); // Log any errors
+      print("Error initializing database: $e");
       throw Exception("Database initialization failed");
     }
   }
@@ -51,7 +51,7 @@ class DatabaseHelper {
         isCompleted INTEGER
       )
 
-        ALTER TABLE tasks ADD COLUMN description TEXT;  // 添加 description 字段
+        ALTER TABLE tasks ADD COLUMN description TEXT;
       ''');
     }
   }
@@ -62,8 +62,8 @@ class DatabaseHelper {
       final List<Map<String, dynamic>> maps = await db.query('tasks');
       return List.generate(maps.length, (i) => Task.fromMap(maps[i]));
     } catch (e) {
-      print("Error fetching tasks: $e"); // Log the error
-      return []; // Return an empty list in case of an error
+      print("Error fetching tasks: $e");
+      return [];
     }
   }
 
@@ -72,9 +72,9 @@ class DatabaseHelper {
     try {
       final db = await database;
       await db.insert('tasks', task.toMap());
-      print("Inserted task: ${task.title}"); // Log the task being inserted
+      print("Inserted task: ${task.title}");
     } catch (e) {
-      print("Error inserting task: $e"); // Log any errors
+      print("Error inserting task: $e");
     }
   }
 
@@ -93,7 +93,7 @@ class DatabaseHelper {
 class Task {
   int? id;
   String title;
-  String description; // 添加描述字段
+  String description;
   bool isCompleted;
 
   Task({this.id, required this.title, required this.description, this.isCompleted = false});
@@ -102,7 +102,7 @@ class Task {
     return {
       'id': id,
       'title': title,
-      'description': description, // 保存描述字段
+      'description': description,
       'isCompleted': isCompleted ? 1 : 0,
     };
   }
@@ -111,7 +111,7 @@ class Task {
     return Task(
       id: map['id'],
       title: map['title'],
-      description: map['description'], // 读取描述字段
+      description: map['description'],
       isCompleted: map['isCompleted'] == 1,
     );
   }
