@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_application_1/databaseHelper.dart'; // 引入数据库助手类
-
+import 'package:flutter_application_1/databaseHelper.dart'; 
 void main() {
   runApp(TodoApp());
 }
@@ -20,19 +19,16 @@ class TodoScreen extends StatefulWidget {
 }
 
 class _TodoScreenState extends State<TodoScreen> {
-  // 从数据库中获取任务列表
-  late Future<List<Task>> taskList; // 定义了 Future 类型的 taskList，从数据库获取任务数据
-  final TextEditingController _titleController = TextEditingController(); // [新代码] 定义用于控制 Title 输入框的控制器
-  final TextEditingController _descriptionController = TextEditingController(); // [新代码] 定义用于控制 Description 输入框的控制器
+  late Future<List<Task>> taskList; 
+  final TextEditingController _titleController = TextEditingController(); 
+  final TextEditingController _descriptionController = TextEditingController(); 
 
   @override
   void initState() {
     super.initState();
-    // 初始化时从数据库中获取任务
-    taskList = DatabaseHelper().getTasks(); // [已修改] 调用 DatabaseHelper 来获取任务
+    taskList = DatabaseHelper().getTasks(); 
   }
 
-  // 添加任务的表单弹窗
   void _showAddTaskDialog() {
     showDialog(
       context: context,
@@ -43,27 +39,25 @@ class _TodoScreenState extends State<TodoScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
-                controller: _titleController, // [新代码] 绑定 title 输入框到 _titleController
-                decoration: InputDecoration(labelText: 'Title'), // 输入框提示
+                controller: _titleController, 
+                decoration: InputDecoration(labelText: 'Title'), 
               ),
               TextField(
-                controller: _descriptionController, // [新代码] 绑定 description 输入框到 _descriptionController
-                decoration: InputDecoration(labelText: 'Description'), // 输入框提示
+                controller: _descriptionController, 
+                decoration: InputDecoration(labelText: 'Description'), 
               ),
             ],
           ),
           actions: [
             TextButton(
               onPressed: () {
-                // 取消并关闭弹窗
                 Navigator.of(context).pop();
               },
               child: Text('Cancel'),
             ),
             TextButton(
               onPressed: () {
-                // 保存任务到数据库并更新列表
-                _addTask(); // [新代码] 保存任务并更新界面
+                _addTask(); 
               },
               child: Text('Save'),
             ),
@@ -73,29 +67,51 @@ class _TodoScreenState extends State<TodoScreen> {
     );
   }
 
-  // 添加任务到数据库
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text('Invalid Input'),
+          content: Text(message), 
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); 
+              },
+              child: Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
   void _addTask() async {
-    if (_titleController.text.isNotEmpty && _descriptionController.text.isNotEmpty) { // [新代码] 确保 title 不为空
+    if (_titleController.text.isEmpty) { 
+      _showErrorDialog("Invalid title, please input title"); 
+      return;
+    }
+
+    if (_descriptionController.text.isNotEmpty) { 
       Task newTask = Task(
         title: _titleController.text,
         description: _descriptionController.text,
-      ); // 创建 Task 实例
-      await DatabaseHelper().insertTask(newTask); // [新代码] 将任务插入数据库
+      ); 
+      await DatabaseHelper().insertTask(newTask); 
 
-      // 清空输入框
-      _titleController.clear(); // [新代码] 清空 title 输入框
-      _descriptionController.clear(); // [新代码] 清空 description 输入框
+      _titleController.clear(); 
+      _descriptionController.clear(); 
 
-      // 重新加载任务
       setState(() {
-        taskList = DatabaseHelper().getTasks(); // [新代码] 更新任务列表
+        taskList = DatabaseHelper().getTasks(); 
       });
-      // 关闭弹窗
-      Navigator.of(context).pop(); // 关闭对话框
-    }else {
-    // 可以显示一个提示，要求用户填写完整信息
-    print("Title or description cannot be empty");
-  }
+
+      Navigator.of(context).pop();
+    } else {
+      _showErrorDialog("Description cannot be empty");
+    }
   }
 
   @override
@@ -106,33 +122,33 @@ class _TodoScreenState extends State<TodoScreen> {
         backgroundColor: Colors.blue,
       ),
       body: FutureBuilder<List<Task>>(
-        future: taskList, // [已修改] 使用 FutureBuilder 来异步加载任务数据
+        future: taskList, 
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator()); // 加载时显示圆形进度条
+            return Center(child: CircularProgressIndicator()); 
           } else if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}')); // 如果出错则显示错误信息
+            return Center(child: Text('Error: ${snapshot.error}')); 
           } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No tasks found.')); // 如果没有任务则显示提示
+            return Center(child: Text('No tasks found.'));
           } else {
-            List<Task> tasks = snapshot.data!; // 获取任务数据
+            List<Task> tasks = snapshot.data!; 
             return ListView.builder(
-              itemCount: tasks.length, // [已修改] 展示任务列表
+              itemCount: tasks.length, 
               itemBuilder: (context, index) {
                 Task task = tasks[index];
                 return TaskTile(
-                  taskTitle: task.title, // [已修改] 显示任务的标题
-                  isChecked: task.isCompleted, // [已修改] 是否已完成
+                  taskTitle: task.title, 
+                  isChecked: task.isCompleted, 
                   checkboxCallback: (bool? checkboxState) {
                     setState(() {
-                      task.isCompleted = checkboxState!; // 更新任务完成状态
-                      DatabaseHelper().updateTask(task); // [已修改] 同步到数据库
+                      task.isCompleted = checkboxState!; 
+                      DatabaseHelper().updateTask(task);
                     });
                   },
                   deleteCallback: () {
                     setState(() {
-                      DatabaseHelper().deleteTask(task.id!); // [已修改] 从数据库删除任务
-                      taskList = DatabaseHelper().getTasks(); // [已修改] 重新加载任务列表
+                      DatabaseHelper().deleteTask(task.id!); 
+                      taskList = DatabaseHelper().getTasks(); 
                     });
                   },
                 );
@@ -144,13 +160,12 @@ class _TodoScreenState extends State<TodoScreen> {
       floatingActionButton: FloatingActionButton(
         backgroundColor: Colors.blue,
         child: Icon(Icons.add),
-        onPressed: _showAddTaskDialog, // [已修改] 点击按钮打开添加任务的表单
+        onPressed: _showAddTaskDialog, 
       ),
     );
   }
 }
 
-// Custom Widget TaskTile
 class TaskTile extends StatelessWidget {
   final String taskTitle;
   final bool isChecked;
@@ -168,18 +183,18 @@ class TaskTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       title: Text(
-        taskTitle, // 显示任务标题
+        taskTitle, 
         style: TextStyle(
-          decoration: isChecked ? TextDecoration.lineThrough : null, // 已完成任务划线
+          decoration: isChecked ? TextDecoration.lineThrough : null,
         ),
       ),
       leading: Checkbox(
-        value: isChecked, // 任务完成状态
-        onChanged: checkboxCallback, // 状态改变时回调
+        value: isChecked, 
+        onChanged: checkboxCallback, 
       ),
       trailing: IconButton(
         icon: Icon(Icons.delete),
-        onPressed: deleteCallback, // 点击删除按钮删除任务
+        onPressed: deleteCallback, 
       ),
     );
   }
