@@ -40,7 +40,6 @@ class DatabaseHelper {
     }
   }
 
-
   Future<void> onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < newVersion) {
       await db.execute('''
